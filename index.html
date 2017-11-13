@@ -1,77 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
+	<title>Stephen's Airplane Game</title>
+	<link rel="stylesheet" type="text/css" href="styling.css">
 </head>
 <body>
-	<style type="text/css">
-		@font-face{
- 		font-family:'digital-clock-font';
- 		src: url('digital-7.ttf');
-		}
-		#screen {
-			font-family: 'digital-clock-font';
-			position: absolute;
-			width: 700px;
-			height: 700px;
-			font-size: 25px;
-			text-align: center;
-			top: 200px;
-			left: 100px;
-		}
-		#points {
-			font-family: 'digital-clock-font';
-			position: fixed;
-			font-size: 15px;
-			text-align: left;
-		}
-		#lives {
-			font-family: 'digital-clock-font';
-			position: fixed;
-			font-size: 15px;
-			text-align: right;
-			left: 700px;
-		}
-		#ocean {
-			background-image: url("ocean.jpg");
-			width: 900px;
-			height: 700px;
-		}
-		.player {
-			position: absolute;
-			width: 70px;
-			height: 75px;
-			background-image: url("player.png");
-		}
-		.enemy {
-			position: absolute;
-			width: 70px;
-			height: 75px;
-			background-image: url("enemy.png");
-		}
-		.missle {
-			position: absolute;
-			background-color: blue;
-			width: 2px;
-			height: 10px;	
-		}
-		.explosion {
-			position: absolute;
-			background-image: url("explosion.png");
-			width: 75px;
-			height: 70px;
-		}
-		.oneup {
-			position: absolute;
-			background-image: url("1up.png");
-			width: 75px;
-			height: 44px;
-		}
-	</style>
-	<div id="ocean">
-		<div id="screen"></div>
-		<div id="points"></div>
-		<div id="lives"></div>
+	<div id="container">
+		<div id="ocean">
+			<img id="ocean2" style="position: absolute; top: -700px" src="ocean.jpg">
+			<img id="ocean1" style="position: absolute; top: 0px" src="ocean.jpg">
+		</div>
+		<div id="toolbar-top">
+			<div id="points"></div>
+			<div id="lives"></div>
+			<p style="font-family: 'red-october-font'; text-align: center; margin: 10px;">Press 'P' to pause game</p>
+		</div>
+		<div id="screen">
+			<div id="screen-text"></div>
+			<div id='selector'>
+				<div id='arrows'>
+					<p class="arrow" style="font-size: 40px">&#9758</p>
+				</div>
+				<div id='options'>
+					<ul id='screen-list'><li>New Game</li></br><li>Rules</li></ul>
+				</div>
+			</div>	
+		</div>
+		<div id="toolbar-bottom">
+			<div id="powerups"></div>
+			<div id="difficulty"></div>
+		</div>
 		<div id="players"></div>	
 		<div id="enemies"></div>		
 		<div id="missles"></div>
@@ -85,6 +43,10 @@
 	var enemydowninc = 1;
 
 	var enemyleftinc = 2;
+
+	var playerdowninc = 2;
+
+	var playerleftinc = 3; 
 
 	var difficulty = 1;
 
@@ -117,8 +79,58 @@
 
 	var oneupgo = false;
 
+	var powerups = "None";
+
 	//global break for main loop
 	var globalBreak = true;
+
+	//pause conditional
+	var checkPause = false;
+
+	var mainscreen = 0;
+
+	//FUNCTIONS!!!!!1!
+
+	//Common flicker - long 2 is always twice long 1!
+	function commonFlicker(who, longInv, long1, long2, ready){
+		function clearFlicker(){
+		ready=false;
+		clearInterval(flickint);
+		document.getElementById(who).style.display = "block";
+		}
+		function whoFlicker(){
+			//console.log(who);
+			document.getElementById(who).style.display = "block";
+			setTimeout(whoFlickerBack, long1);
+		}
+
+		function whoFlickerBack(){
+			//console.log(who);
+			document.getElementById(who).style.display = "none";
+		}
+		//3 seconds before invincibilty off
+		setTimeout(clearFlicker, longInv);
+		setTimeout(whoFlickerBack, long1);
+		var flickint = setInterval(whoFlicker, long2);
+	}	
+
+	var oceantopnum = 0;
+	var oceantopnum2 = -700;
+
+	function scrollBackground(){
+		// var oceantopnum = parseFloat(ocean.top);
+		// console.log(oceantopnum);
+		oceantopnum += 0.5;
+		oceantopnum2 += 0.5;
+		document.getElementById("ocean1").style.top = ""+oceantopnum+"px";
+		document.getElementById("ocean2").style.top = ""+oceantopnum2+"px"
+		if (oceantopnum == 700){
+			oceantopnum = -700;
+		} 
+		if (oceantopnum2 == 700){
+			oceantopnum2 = -700;
+		} 
+	}
 
 	//change difficulty
 	function changeDifficulty(x){
@@ -127,6 +139,44 @@
 			enemyleftinc = x/2 + 1;
 		}
 	}
+
+	//Updates lives
+	function updateLives(x){
+		content="";
+		for (var i=0; i<x; i++){
+			content+="<img src='playercopy.png'>"
+		}
+		document.getElementById("lives").innerHTML = "<h1>Lives: "+content+"</h1>"
+	}
+
+	function pause(){
+		breakGameLoop();
+		checkPause = true;	
+    }
+
+    //rests globalbreak, screens, then runs game loop
+	function nextRound(){
+		globalBreak = false;
+		document.getElementById("toolbar-bottom").style.display = "block";
+	    document.getElementById("toolbar-top").style.display = "block";
+	    document.getElementById("screen").style.display = "none";
+	   	document.getElementById("points").innerHTML = "<h1>You have "+points+" points</h1>";
+	   	updateLives(lives);
+	   	document.getElementById("powerups").innerHTML = "<h1>Powerups: "+powerups+"</h1>";
+	   	document.getElementById("difficulty").innerHTML = "<h1>Difficulty: "+difficulty+"</h1>";
+	   	//resets player, enemies, explosions
+	   	initializeGame();
+	   	//runs main game loop
+		gameLoop();
+	}
+
+	//clears explosions and missles for each round
+	function clearScreen(){
+		document.getElementById("explosion").innerHTML = "";
+		missles = [];
+		document.getElementById("missles").innerHTML = "";
+	}
+	
 
 	//resets player, enemies, explosions for each round
 	function initializeGame(){
@@ -142,7 +192,7 @@
 		}
 	}
 
-	//generates based on the round #
+	//generates enemies based on the round #
 	function initializeEnemies(y){
 		function calculateEnemyLeft(x){
 			var enemyleft = (900 - (x*100))/2;
@@ -176,10 +226,10 @@
 			if (enemies[idx].top >= 632){
 				enemies[idx].top =  0;
 			}
-			if (enemies[idx].left == 10){
+			if (enemies[idx].left <= 10){
 				enemies[idx].zig = "right";
 			}
-			if (enemies[idx].left == 830){
+			if (enemies[idx].left >= 830){
 				enemies[idx].zig = "left";
 			}	
 		}	
@@ -197,34 +247,16 @@
 			if (enemies[idx].top >= 632){
 				enemies[idx].top =  0;
 			}
-			if (enemies[idx].left == 10){
+			if (enemies[idx].left <= 10){
 				enemies[idx].zig = "right";
 			}
-			if (enemies[idx].left == 830){
+			if (enemies[idx].left >= 830){
 				enemies[idx].zig = "left";
 			}	
 		}	
 	}
 
-	//rests globalbreak, screens, then runs game loop
-	function nextRound(){
-		globalBreak = false;
-		document.getElementById("points").style.display = "block";
-	    document.getElementById("lives").style.display = "block";
-	    document.getElementById("screen").innerHTML = "";
-	   	document.getElementById("points").innerHTML = "<h1>You have "+points+" points</h1>";
-	   	document.getElementById("lives").innerHTML = "<h1>You have "+lives+" lives</h1>";
-	   	//resets player, enemies, explosions
-	   	initializeGame();
-	   	//runs main game loop
-		gameLoop();
-	}
-	//clears explosions and missles for each round
-	function clearScreen(){
-		document.getElementById("explosion").innerHTML = "";
-		missles = [];
-		document.getElementById("missles").innerHTML = "";
-	}
+	//PLAYER FUNCTIONS!!
 
 	//draws hero based on positioning!
 	function drawPlayer(){
@@ -232,28 +264,14 @@
 		document.getElementById("players").innerHTML = content;
 	}
 
-	//makes player momentarily incvincible after he is hit
+	//make player invincible
 	function playerInvincible(){
-		//resets invincibility
-		function clearInvincible(){
-			invincible=false;
-			clearInterval(invint);
+		function clearInv(){
+			invincible = false;
 		}
-		//causes player to flicker
-		function playerFlicker(){
-			document.getElementById("players").style.display = "none";
-			function playerFlickerBack(){
-				document.getElementById("players").style.display = "block";
-			}
-			setTimeout(playerFlickerBack, 100);
-		}
-		if (lives > 0){
-			//3 seconds before invincibilty off
-			setTimeout(clearInvincible, 3000);
-			if (invincible == true){
-				//document.getElementById("players").style.display = "none";
-				invint = setInterval(playerFlicker, 200);
-			}
+		if (invincible == true){
+			commonFlicker("players", 3000, 100, 200);
+			setTimeout(clearInv, 3000);
 		}
 	}
 
@@ -312,7 +330,7 @@
 			//iterates thru each enemy for each missle
 			for (var idx2=0; idx2<enemies.length; idx2++){
 				//if missle hits enemy, clears missle and enemy, creates explosion, adds point
-				if (missletop <= (enemies[idx2].top + 75) && missleleft < enemies[idx2].left + 65 && missleleft + 2 > enemies[idx2].left){
+				if (missletop <= (enemies[idx2].top + 75) && (missletop + 2) >= enemies[idx2].top && missleleft < enemies[idx2].left + 65 && missleleft + 2 > enemies[idx2].left){
 					document.getElementById("explosion").innerHTML += "<div class='explosion' style='left:"+enemies[idx2].left+"px; top:"+enemies[idx2].top+"px;'></div>";
 					//cleasr explosion after 200 ms
 					setTimeout(clearScreen, 200);
@@ -335,6 +353,11 @@
 		}
 	}
 
+	//POWERUP FUNCTIONS
+	function addPowerup(x){
+		document.getElementById("powerups").innerHTML = "<h1>Powerups: "+x+"</h1>";
+	}
+
 	//randomintgenerator
 	function randomIntFromInterval(min,max)
 		{
@@ -350,6 +373,7 @@
 			oneups.push({left: randleft, top: 0});
 			document.getElementById("oneup").innerHTML += "<div class='oneup' style='left:"+randleft+"px; top:0px'></div>";
 			oneupgo = false;
+			addPowerup("Extra life!");
 		}
 	}
 
@@ -365,8 +389,9 @@
 			//if player hits 1up, adds life		
 			else if (player.top < (oneups[idx].top + 40) && (player.top + 70) > oneups[idx].top && player.left < oneups[idx].left + 65 && player.left + 65 > oneups[idx].left){
 				lives += 1;
-				document.getElementById("lives").innerHTML = "<h1>You have "+lives+" lives</h1>";
+				updateLives(lives);
 				oneups.splice(idx, 1);
+				addPowerup("None");
 			}
 		}
 		document.getElementById("oneup").innerHTML = content;
@@ -381,7 +406,7 @@
 					//make invincible
 					invincible = true;
 					lives -= 1;
-					document.getElementById("lives").innerHTML = "<h1>You have "+lives+" lives</h1>";
+					updateLives(lives);
 					//player.top = playerStartTop;	
 					//player.left = playerStartLeft;
 					//drawPlayer();
@@ -413,18 +438,25 @@
 
     //if lives = 0
     function youLose(){
-    	document.getElementById("lives").style.display = "none";
-    	document.getElementById("points").style.display = "none";
-    	document.getElementById("screen").innerHTML = "<h1>You LOSE!</h1>";
+    	document.getElementById("players").innerHTML = "";
+    	document.getElementById("toolbar-bottom").style.display = "none";
+    	document.getElementById("toolbar-top").style.display = "none";
+    	document.getElementById("screen-text").innerHTML = "<h1>You LOSE!</h1>";
    		document.getElementById("oneup").innerHTML = "";
+   		oceantopnum = 0;
+    	oceantopnum2 = -700;
    		points=0;
    		round=1;
    		lives=3;    		
    		difficulty=1;
+   		changeDifficulty(difficulty);
     	setTimeout(initializeScreen, 2000);
     }
+
     //if round = 4
     function youWin(){
+    	oceantopnum = 0;
+    	oceantopnum2 = -700;
     	oneups = [];
 		document.getElementById("oneup").innerHTML = "";
 		round = 1;
@@ -434,15 +466,43 @@
 		initializeScreen();
     }
 
+    function mainSelector(){
+    	oceantopnum = 0;
+    	oceantopnum2 = -700;
+    	document.getElementById("selector").style.display = "block";
+    	mainscreen = "newgame";
+    	document.onkeydown = function(f){
+    		//console.log(f);
+	    	if (f.keyCode == 40){
+	    		arrows.getElementsByClassName("arrow")[0].style.top = "45px";
+	    		mainscreen = "help";
+	    	}
+	    	if (f.keyCode == 38){
+	    		arrows.getElementsByClassName("arrow")[0].style.top = "0px";
+	    		mainscreen = "newgame";
+	    	}
+	    }	
+    }
+
+    function mainScreen(){
+    	document.getElementById("toolbar-bottom").style.display = "none";
+    	document.getElementById("toolbar-top").style.display = "none";
+    	document.getElementById("screen-text").innerHTML = "<h1> Welcome to Stephen's Airplane Game!</h1><h2>Select option:</h2>";
+    	mainSelector();
+    }
+
+
     //main screen before each round
     function initializeScreen(){
+    	document.getElementById("screen").style.display = "block";
     	//clears screen of players, enemies, explosions
     	clearScreen();
-		document.getElementById("players").style.display = "none";
+    	document.getElementById("players").innerHTML = "";
+		//document.getElementById("players").style.display = "none";
 		enemies = [];
 		document.getElementById("enemies").style.display = "none";
 		//YOU LOSE!
-    	if (lives == 0){
+    	if (lives <= 0){
     		youLose();
     		invincible = false;
     	}
@@ -453,56 +513,83 @@
     	//runs the initialization screen
 		//first screen
 		else if (lives == 3 && round == 1 && difficulty ==1){
-    		document.getElementById("screen").innerHTML = "<h1> Welcome to Stephen's Airplane Game! You have "+ lives +" lives! Press ENTER to continue.</h1>";
+    		mainScreen();
     	}
     	//next difficulty
     	else if (lives == 3 && round == 1 && difficulty > 1){
-    		document.getElementById("screen").innerHTML = "<h1> You WON! Difficulty set to "+difficulty+"! Press ENTER to continue.</h1>";
-    		document.getElementById("points").style.display = "none";
-    		document.getElementById("lives").style.display = "none";
+    		document.getElementById("screen-text").innerHTML = "<h1> You WON! Difficulty set to "+difficulty+"! Press ENTER to continue.</h1>";
+    		document.getElementById("toolbar-bottom").style.display = "none";
+    		document.getElementById("toolbar-top").style.display = "none";
     	}
     	//next round
     	else if (lives > 0 && round >= 1){
-    		document.getElementById("lives").innerHTML = "<h1>You have "+lives+" lives</h1>";
-    		document.getElementById("screen").innerHTML = "<h1> Round "+round+"! You have "+ lives +" lives left! Press ENTER to continue.</h1>";
+    		updateLives(lives);
+    		document.getElementById("screen-text").innerHTML = "<h1> Round "+round+"! Press ENTER to continue.</h1>";
     	}
-    	//if space bar pressed, next round starts
+    	//if enter pressed, next round starts
     	onkeypress = function(key){
     		//console.log(key);
     		if (key.keyCode == 13){
-    			document.getElementById("screen").innerHTML = "Round "+round;
-    			//runs next round
-    			setTimeout(nextRound, 2000);
+    			if (mainscreen == "newgame"){
+    				document.getElementById("selector").style.display = "none";
+	    			document.getElementById("screen-text").innerHTML = "<p>Round "+round+"</p>";
+	    			//runs next round
+	    			setTimeout(nextRound, 2000);
+    			}
+    			if (mainscreen == "help"){
+    				return;
+    			}
 			}
    		}	
     }
 
+    var keylog = [];
+
+    function inputMovePlayer(){
 	//moves player according to key stroke
-	document.onkeydown = function(e) {
+		document.onkeydown = function(e) {
+			if(e.keyCode == 80){
+				switch(checkPause){
+					case false:
+						pause();
+						break;
+					case true:
+						gameLoop(); 
+						checkPause = false;
+						break;	
+				}
+			}	
+			keylog[e.keyCode] = true;
+		}
+		document.onkeyup = function(e) {
+			keylog[e.keyCode] = false;
+		}
+		//console.log(keylog);
 		//prevents player from moving in between rounds
 		if (globalBreak == false){
-			if(e.keyCode == 37){ //left
+			if(keylog[37] == true){ //left
 				if (player.left > 0){
-				player.left = player.left - 15;
+				player.left = player.left - playerleftinc;
 				}
 			}
-			if(e.keyCode == 39){ //right
+			if(keylog[39] == true){ //right
 				if (player.left < 840){
-				player.left = player.left + 15;
+				player.left = player.left + playerleftinc;
 				}
 			}
-			if(e.keyCode == 38){ //up
+			if(keylog[38] == true){ //up
 				if (player.top > 2*(700/3)){
-				player.top = player.top - 15;
+				player.top = player.top - playerdowninc;
 				}
 			}
-			if(e.keyCode == 40){ //down
+			if(keylog[40] == true){ //down
 				if (player.top < 700-75){
-				player.top = player.top + 15;
+				player.top = player.top + playerdowninc;
 				}
 			}
-			if(e.keyCode == 32){ //fire
+			if(keylog[32] == true){ //fire
 				missles.push({left: (player.left+34), top:(player.top-8)});
+				keylog[32] = false;
 				drawMissles();
 			}
 			drawPlayer();
@@ -513,6 +600,7 @@
 	function gameLoop(){
 		if (globalBreak == false){
 			//runs game functions in order
+			inputMovePlayer();
 			checkLives();
 			checkCollision();
 			drawPlayer();
@@ -522,6 +610,7 @@
 			drawMissles();
 			createOneUp();
 			moveOneUp();
+			scrollBackground();
 			timer = setTimeout(gameLoop, 10);
 		}
 		//breaks loop between rounds
@@ -537,5 +626,6 @@
 	initializeScreen();
 
 	</script>
+
 </body>
 </html>
